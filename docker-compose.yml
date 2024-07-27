@@ -1,0 +1,72 @@
+---
+services:
+  nginx_dc1:
+    image: nginx:latest
+    container_name: nginx_dc1
+    hostname: nginx_dc1
+    volumes:
+      - ./conf/nginx/api_dc1.conf:/etc/nginx/conf.d/api.conf
+      - ./logs/nginx/dc1:/var/log/nginx
+    networks:
+      datacenter:
+        ipv4_address: 172.16.0.1
+
+  nginx_dc2:
+    image: nginx:latest
+    container_name: nginx_dc2
+    hostname: nginx_dc2
+    volumes:
+      - ./conf/nginx/api_dc2.conf:/etc/nginx/conf.d/api.conf
+      - ./logs/nginx/dc2:/var/log/nginx
+    networks:
+      datacenter:
+        ipv4_address: 172.16.0.2
+
+  haproxy:
+    image: haproxy:latest
+    container_name: haproxy
+    hostname: haproxy
+    volumes:
+      - ./conf/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+      - ./logs/haproxy:/var/log/haproxy
+    networks:
+      client:
+        ipv4_address: 10.0.0.2
+      datacenter:
+        ipv4_address: 172.16.0.3
+    depends_on:
+      - nginx_dc1
+      - nginx_dc2
+
+  nginx_proxy:
+    build:
+      context: ./nginx_proxy
+      dockerfile: Dockerfile
+    container_name: nginx_proxy
+    hostname: nginx_proxy
+    volumes:
+      - ./conf/nginx/to_haproxy.conf:/etc/nginx/conf.d/to_haproxy.conf
+      - ./logs/nginx/proxy:/var/log/nginx
+    ports:
+      - 80:80
+    networks:
+      client:
+        ipv4_address: 10.0.0.1
+    depends_on:
+      - haproxy
+
+networks:
+  client:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.0.0.0/24
+         gateway: 10.0.0.254
+
+  datacenter:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.16.0.0/24
+         gateway: 172.16.0.254
+...
