@@ -28,7 +28,6 @@ services:
     hostname: haproxy
     volumes:
       - ./conf/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
-      - ./logs/haproxy:/var/log/haproxy
     networks:
       client:
         ipv4_address: 10.0.0.2
